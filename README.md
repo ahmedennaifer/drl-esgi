@@ -17,3 +17,4 @@ to run:
   --duration DURATION  Duration in seconds to
                        run the count benchmark
 ```
+example: ```python3 src/env.py --count --duration=3``` 
