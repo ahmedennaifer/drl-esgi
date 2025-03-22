@@ -71,7 +71,6 @@ class Env:
             d(n) =  direction vector of n
             n(n) = the resulting new vector, calculated with the direciton vect
 
-        this impl follows the ray casting technique for pawn movement and furthest pawn detection.
         """
         moves = []
         for i in range(5):
@@ -249,7 +248,7 @@ class Env:
     def get_state(self):
         """
         returns the state repr of the game.
-        returd a flat list of `78 values` for different modes.
+        returd a flat list of `79 values` for different modes.
         BOBAIL: 25
         P1 and P2 : 25, 25.
         3 values for state specific attributes.
@@ -257,6 +256,7 @@ class Env:
             - 1 value for `current player move`
             - 1 value for `move phase (pawn or bobail)`
             - 1 value for `first move`.
+            - 1 value for if game is over
         """
         state = []
         # 75 values encoding, as mentionned above
@@ -273,9 +273,17 @@ class Env:
                 state.append(1 if self.board[i][j] == "R" else 0)
 
         # remaining 3
-        state.append(1 if self.current_player == 1 else 0)
-        state.append(1 if self.move_phase == "bobail" else 0)
-        state.append(1 if self.first_turn else 0)
+        state.append(1 if self.current_player == 1 else 0)  # current plauer
+
+        if self.first_turn and self.current_player == 1:
+            state.append(0)
+        else:
+            state.append(1 if self.move_phase == "bobail" else 0)  # bobail
+
+        state.append(1 if self.first_turn else 0)  # first_turn
+
+        winner = self.check_winner()
+        state.append(1 if winner is not None else 0)  # game_over
 
         return state
 
@@ -380,16 +388,22 @@ def main():
 
     while True:
         game.print_board()
+        # show game state
+        state = game.get_state()
+        print(state)
+
         print(f"{Fore.BLUE}Player {game.current_player}'s turn{Style.RESET_ALL}")
 
         if mode == GameMode.PvE and game.current_player == 2:
             bobail_message = ""
-
             # if not the first turn, bot needs to move BOBAIL first
             if not game.first_turn:
                 bobail_success, bobail_message = game.make_random_move()
+                # check if bobail is in end state
                 if "wins" in bobail_message:
                     print(f"bot moved: {bobail_message}")
+                    game.print_board()
+                    print(game.get_state())
                     break
 
             # then move pawn
@@ -401,6 +415,8 @@ def main():
                 print(f"bot moved: {pawn_message}")
 
             if "wins" in pawn_message:
+                game.print_board()
+                print(game.get_state())
                 break
         else:
             if game.move_phase == "bobail" and not game.first_turn:
@@ -418,15 +434,15 @@ def main():
 
             success, message = game.move_piece(start, end)
             print(message)
-            # check game state
-            game_state = game.get_state()
-            print(game_state)
             if "wins" in message:
+                game.print_board()
+                print(game.get_state())
                 break
 
         winner = game.check_winner()
         if winner:
             print(f"{Fore.MAGENTA}player {winner} wins!{Style.RESET_ALL}")
+            print(game.get_state())
             break
 
 
