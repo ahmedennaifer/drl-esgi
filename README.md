@@ -8,7 +8,8 @@ to setup:
 
 two modes exists: PvP and PvE (random)
 to run: 
-```python3 src/env.py
+```
+  python3 src/env.py
   options:
   -h, --help           show this help message
                        and exit
