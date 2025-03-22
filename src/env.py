@@ -64,25 +64,41 @@ class Env:
     def get_possible_moves(self, phase):
         """
         takes a phase as param. a phase (move phase) is either a pawn or BOBAIL
-        Returns 2 tuples (start_row, start_col) and (end_row, end_col)
+        returns a list with 2 tuples (start_row, start_col) and (end_row, end_col)
+        which helps track the furthest pos to get to the correct destination.
+
+        Notation:
+            d(n) =  direction vector of n
+            n(n) = the resulting new vector, calculated with the direciton vect
+
+        this impl follows the ray casting technique for pawn movement and furthest pawn detection.
         """
         moves = []
         for i in range(5):
             for j in range(5):
                 piece = self.board[i][j]
                 if phase == "bobail" and piece == "R":
+                    # we start by checking for the bobail and its surrounding 8 blocks/cells.
                     for dx in [-1, 0, 1]:
                         for dy in [-1, 0, 1]:
+                            # these fors create all possible combinations of the 9 blocks ie:
+                            # (-1,-1), (-1, 0), (-1, 1) ...
                             if dx == 0 and dy == 0:
+                                # we skip if we are in the center -> stay in place because a valid
+                                # move has to have direction
                                 continue
+                            # we calculate the new row/cols indexes by adding the offset
                             ni, nj = i + dx, j + dy
                             if (
                                 0 <= ni < 5
                                 and 0 <= nj < 5
                                 and self.board[ni][nj] == " "
-                            ):
+                            ):  # checks if move is withing  bounds and the target cell is empty " "
                                 moves.append(((i, j), (ni, nj)))
+
+                    # check for pawn phase and the correct current player
                 elif phase == "pawn" and piece == f"P{self.current_player}":
+                    # define all possible directions for the pawn, right down up left, diag up left etc..
                     for direction in [
                         (0, 1),
                         (1, 0),
@@ -93,9 +109,14 @@ class Env:
                         (1, -1),
                         (-1, 1),
                     ]:
-                        step = 1
-                        furthest_pos = None
+                        step = 1  # distance counter
+                        furthest_pos = None  # i,j of furthest empty cell
                         while True:
+                            # here step = 1, first iteration
+                            # lets say for direction (0, 1), and postion (1, 1)
+                            # ni (new i) = 1 + (0 * 1)
+                            # nj = 1 + (1 * 1)
+                            # which means new position will be (1, 2) and thus furthest_pos = 1,2
                             ni = i + direction[0] * step
                             nj = j + direction[1] * step
                             if not (0 <= ni < 5 and 0 <= nj < 5):
@@ -103,7 +124,7 @@ class Env:
                             if self.board[ni][nj] != " ":
                                 break
                             furthest_pos = (ni, nj)
-                            step += 1
+                            step += 1  # if we dont hit a wall/ illegal move, we increment the step.
 
                         if furthest_pos:
                             moves.append(((i, j), furthest_pos))
@@ -208,6 +229,7 @@ class Env:
         return True, ""
 
     def check_winner(self):
+        """checks win conditions : smothered bobail, or bobail in starting rows of p1, p2"""
         if self.bobail_pos in self.player_start[1]:
             return 1
         if self.bobail_pos in self.player_start[2]:
