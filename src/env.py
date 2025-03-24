@@ -287,9 +287,32 @@ class Env:
 
         return state
 
-    def action_mask(self):
-        # TODO: action_mask with forbidden moves
-        pass
+    def get_action_mask(self):
+        """
+        return the action mask of a given move
+        we make a lookup-set and
+        each action is represented as a tuple (start_row, start_col, end_row, end_col)
+        return if the action is valid based on `get_possible_moves` fn
+        Issue: very large tuple of 625 elems
+        """
+        # TODO: find better encoding efficiency.
+
+        if not self.first_turn and self.move_phase == "bobail":
+            valid_moves = self.get_possible_moves("bobail")
+        else:
+            valid_moves = self.get_possible_moves("pawn")
+
+        valid_moves_set = set([(start, end) for start, end in valid_moves])
+        mask = []
+        for start_row in range(5):
+            for start_col in range(5):
+                for end_row in range(5):
+                    for end_col in range(5):
+                        start = (start_row, start_col)
+                        end = (end_row, end_col)
+                        # 1 if move is valid, 0 if not
+                        mask.append(1 if (start, end) in valid_moves_set else 0)
+        return mask
 
 
 def get_coord_input(prompt):
@@ -391,7 +414,7 @@ def main():
         # show game state
         state = game.get_state()
         print(state)
-
+        print("Mask:", game.get_action_mask())
         print(f"{Fore.BLUE}Player {game.current_player}'s turn{Style.RESET_ALL}")
 
         if mode == GameMode.PvE and game.current_player == 2:
@@ -408,7 +431,6 @@ def main():
 
             # then move pawn
             pawn_success, pawn_message = game.make_random_move()
-
             if bobail_message:
                 print(f"bot moved: BOBAIL then pawn - {pawn_message}")
             else:
